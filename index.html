@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Couple Puzzle Game</title>
+  <style>
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', sans-serif;
+      background: #ffe6ec;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow-x: hidden;
+    }
+
+    h1 {
+      color: #d6336c;
+      margin-top: 20px;
+    }
+
+    #puzzle-container {
+      margin: 20px;
+      width: 90vmin;
+      height: 90vmin;
+      max-width: 400px;
+      max-height: 400px;
+      display: grid;
+      grid-template-columns: repeat(3, 1fr);
+      gap: 2px;
+      border: 3px solid #d6336c;
+      background: #fff;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .tile {
+      width: 100%;
+      height: 100%;
+      background-size: 300% 300%;
+      background-image: url('us_puzzle.jpeg');
+      border-radius: 8px;
+      transition: 0.3s ease;
+    }
+
+    .hidden {
+      visibility: hidden;
+    }
+
+    #message {
+      margin-top: 15px;
+      font-size: 1.5rem;
+      color: #d6336c;
+      display: none;
+      animation: fadeIn 1.2s ease forwards;
+    }
+
+    @keyframes fadeIn {
+      from {opacity: 0;}
+      to {opacity: 1;}
+    }
+
+    button {
+      background: #ff99b7;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 10px;
+      color: white;
+      font-weight: bold;
+      margin-top: 15px;
+      cursor: pointer;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      transition: background 0.3s ease;
+    }
+
+    button:hover {
+      background: #ff6b9c;
+    }
+
+    @media (max-width: 600px) {
+      h1 {
+        font-size: 1.5rem;
+      }
+
+      #message {
+        font-size: 1.2rem;
+      }
+    }
+  </style>
+</head>
+<body>
+
+  <h1>💘 Our Love Puzzle 💘</h1>
+  <div id="puzzle-container"></div>
+  <div id="message">You complete me ❤️</div>
+  <button onclick="initPuzzle()">Restart</button>
+
+  <audio id="winSound" src="https://cdn.pixabay.com/download/audio/2023/03/02/audio_b7e1c43847.mp3?filename=small-success-win-celebration-89693.mp3"></audio>
+
+  <script>
+    const gridSize = 3; // change to 4 for 4x4
+    let tiles = [];
+    let emptyIndex = gridSize * gridSize - 1;
+
+    function shuffle(array) {
+      for (let i = array.length - 2; i > 0; i--) {
+        const j = Math.floor(Math.random() * i);
+        [array[i], array[j]] = [array[j], array[i]];
+      }
+      return array;
+    }
+
+    function isSolvable(arr) {
+      let inversions = 0;
+      for (let i = 0; i < arr.length; i++) {
+        for (let j = i + 1; j < arr.length; j++) {
+          if (arr[i] && arr[j] && arr[i] > arr[j]) inversions++;
+        }
+      }
+      return inversions % 2 === 0;
+    }
+
+    function createPuzzle() {
+      const container = document.getElementById('puzzle-container');
+      container.innerHTML = '';
+      let numbers = [...Array(gridSize * gridSize).keys()];
+      do {
+        shuffle(numbers);
+      } while (!isSolvable(numbers));
+
+      tiles = numbers;
+
+      numbers.forEach((num, index) => {
+        const tile = document.createElement('div');
+        tile.className = 'tile';
+        if (num === 0) {
+          tile.classList.add('hidden');
+        } else {
+          const x = (num - 1) % gridSize;
+          const y = Math.floor((num - 1) / gridSize);
+          tile.style.backgroundPosition = `${(x * 100) / (gridSize - 1)}% ${(y * 100) / (gridSize - 1)}%`;
+        }
+
+        tile.addEventListener('click', () => moveTile(index));
+        container.appendChild(tile);
+      });
+    }
+
+    function moveTile(index) {
+      const row = Math.floor(index / gridSize);
+      const col = index % gridSize;
+      const emptyRow = Math.floor(emptyIndex / gridSize);
+      const emptyCol = emptyIndex % gridSize;
+
+      const distance = Math.abs(row - emptyRow) + Math.abs(col - emptyCol);
+      if (distance === 1) {
+        [tiles[index], tiles[emptyIndex]] = [tiles[emptyIndex], tiles[index]];
+        emptyIndex = index;
+        updateTiles();
+        if (checkWin()) showMessage();
+      }
+    }
+
+    function updateTiles() {
+      const container = document.getElementById('puzzle-container');
+      [...container.children].forEach((tile, index) => {
+        const num = tiles[index];
+        if (num === 0) {
+          tile.className = 'tile hidden';
+          tile.style.backgroundImage = '';
+        } else {
+          tile.className = 'tile';
+          const x = (num - 1) % gridSize;
+          const y = Math.floor((num - 1) / gridSize);
+          tile.style.backgroundImage = "url('us_puzzle.jpeg')";
+          tile.style.backgroundPosition = `${(x * 100) / (gridSize - 1)}% ${(y * 100) / (gridSize - 1)}%`;
+        }
+      });
+    }
+
+    function checkWin() {
+      for (let i = 0; i < tiles.length - 1; i++) {
+        if (tiles[i] !== i + 1) return false;
+      }
+      return true;
+    }
+
+    function showMessage() {
+      document.getElementById('message').style.display = 'block';
+      document.getElementById('winSound').play();
+    }
+
+    function initPuzzle() {
+      document.getElementById('message').style.display = 'none';
+      createPuzzle();
+    }
+
+    window.onload = initPuzzle;
+  </script>
+</body>
+</html>

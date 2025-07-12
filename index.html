@@ -1,194 +1,399 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>Jigsaw Love Puzzle</title>
-  <style>
-    body {
-      background-color: #ffe6ec;
-      font-family: 'Segoe UI', sans-serif;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      padding: 20px;
-    }
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Romantic Puzzle Game</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Pacifico&display=swap');
 
-    h1 {
-      color: #d6336c;
-      margin-bottom: 10px;
-    }
+  body {
+    background: linear-gradient(135deg, #ffe6f0 0%, #ffd1dc 100%);
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    color: #d6336c;
+    user-select: none;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 30px 15px 60px;
+    min-height: 100vh;
+  }
 
+  h1 {
+    font-family: 'Pacifico', cursive;
+    font-size: 3rem;
+    margin-bottom: 25px;
+    color: #c70059;
+    text-shadow: 1px 1px 5px #ffaccb;
+    user-select: none;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  h1::before {
+    content: "💖";
+  }
+
+  #puzzle-board {
+    position: relative;
+    width: 315px;
+    height: 315px;
+    border-radius: 25px;
+    border: 4px solid #ffaccb;
+    background: radial-gradient(circle at center, #ffe6f0 0%, #ffd1dc 100%);
+    box-shadow: 0 0 20px #f08ab4aa inset;
+    margin-bottom: 35px;
+  }
+
+  /* Drop zones: invisible but help snapping */
+  .drop-zone {
+    position: absolute;
+    width: 100px;
+    height: 100px;
+    left: 0;
+    top: 0;
+  }
+
+  #pieces-container {
+    position: relative;
+    width: 320px;
+    min-height: 120px;
+    background: #fff0f5;
+    border-radius: 25px;
+    padding: 20px;
+    box-shadow: 0 4px 20px rgba(214, 51, 108, 0.3);
+    margin-bottom: 25px;
+
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .piece {
+    width: 100px;
+    height: 100px;
+    background-image: url('us_puzzle.jpeg');
+    background-size: 300px 300px;
+    border-radius: 10px;
+    cursor: grab;
+    box-shadow: 0 10px 15px rgba(215,0,90,0.3);
+    user-select: none;
+    border: 3px solid #ffaccb;
+    transition: box-shadow 0.2s ease;
+    position: relative; /* default */
+  }
+  .piece.dragging {
+    opacity: 0.7;
+    cursor: grabbing;
+    box-shadow: 0 20px 30px rgba(215,0,90,0.7);
+    transform: scale(1.05);
+    transition: none;
+    position: fixed !important; /* so it moves with mouse */
+    z-index: 1000 !important;
+  }
+  .piece:hover:not(.dragging) {
+    box-shadow: 0 14px 25px rgba(215,0,90,0.5);
+  }
+
+  #message {
+    font-size: 1.7rem;
+    margin-top: 25px;
+    color: #c70059;
+    font-weight: 700;
+    text-shadow: 1px 1px 3px #ffaccb;
+    display: none;
+    animation: fadeIn 1s ease forwards;
+    user-select: none;
+  }
+
+  button {
+    background-color: #ff80a1;
+    color: white;
+    border: none;
+    padding: 14px 30px;
+    border-radius: 25px;
+    font-weight: 700;
+    font-size: 1.1rem;
+    cursor: pointer;
+    box-shadow: 0 6px 15px rgba(255, 128, 161, 0.6);
+    transition: background-color 0.3s ease, box-shadow 0.3s ease;
+    user-select: none;
+  }
+  button:hover {
+    background-color: #ff4d79;
+    box-shadow: 0 8px 25px rgba(255, 77, 121, 0.9);
+  }
+
+  @keyframes fadeIn {
+    from {opacity: 0;}
+    to {opacity: 1;}
+  }
+
+  @media (max-width: 420px) {
     #puzzle-board {
-      position: relative;
-      width: 300px;
-      height: 300px;
-      border: 4px dashed #d6336c;
-      display: grid;
-      grid-template-columns: repeat(3, 1fr);
-      grid-template-rows: repeat(3, 1fr);
-      margin-bottom: 20px;
+      width: 260px;
+      height: 260px;
+      border-radius: 20px;
     }
-
-    .drop-zone {
-      width: 100px;
-      height: 100px;
-      border: 1px dashed transparent;
-      position: relative;
+    #pieces-container {
+      width: 260px;
+      min-height: 110px;
+      border-radius: 20px;
+      padding: 15px;
     }
-
-    #pieces {
-      display: flex;
-      flex-wrap: wrap;
-      justify-content: center;
-      gap: 10px;
-      max-width: 320px;
-    }
-
     .piece {
-      width: 100px;
-      height: 100px;
-      background-image: url('us_puzzle.jpeg');
-      background-size: 300px 300px;
-      border-radius: 6px;
-      cursor: grab;
+      width: 80px;
+      height: 80px;
+      background-size: 240px 240px;
+      border-radius: 8px;
     }
-
-    .hidden {
-      display: none;
-    }
-
-    #message {
-      display: none;
-      font-size: 1.5rem;
-      color: #d6336c;
-      animation: fadeIn 1s ease forwards;
-    }
-
-    button {
-      margin-top: 15px;
-      background-color: #ff99b7;
-      border: none;
-      padding: 10px 20px;
-      border-radius: 10px;
-      color: white;
-      font-weight: bold;
-      cursor: pointer;
-    }
-
-    button:hover {
-      background-color: #ff6b9c;
-    }
-
-    @keyframes fadeIn {
-      from { opacity: 0; }
-      to { opacity: 1; }
-    }
-
-    @media (max-width: 500px) {
-      #puzzle-board, .piece {
-        width: 240px;
-        height: 240px;
-      }
-
-      .drop-zone, .piece {
-        width: 80px;
-        height: 80px;
-      }
-
-      .piece {
-        background-size: 240px 240px;
-      }
-    }
-  </style>
+  }
+</style>
 </head>
 <body>
-  <h1>💖 Complete the Puzzle 💖</h1>
-  <div id="puzzle-board"></div>
-  <div id="pieces"></div>
-  <div id="message">You complete me ❤️</div>
-  <button onclick="initPuzzle()">Restart</button>
 
-  <script>
-    const gridSize = 3;
-    let correctCount = 0;
+<h1>💞 Drag & Drop Our Puzzle 💞</h1>
 
-    function initPuzzle() {
-      const board = document.getElementById('puzzle-board');
-      const pieces = document.getElementById('pieces');
-      const message = document.getElementById('message');
-      board.innerHTML = '';
-      pieces.innerHTML = '';
-      message.style.display = 'none';
-      correctCount = 0;
+<div id="puzzle-board" aria-label="Puzzle board"></div>
+<div id="pieces-container" aria-label="Pieces container"></div>
+<div id="message" role="alert">You complete me ❤️</div>
 
-      const positions = [];
+<button onclick="initPuzzle()">Restart</button>
 
-      for (let y = 0; y < gridSize; y++) {
-        for (let x = 0; x < gridSize; x++) {
-          const pos = { x, y };
-          positions.push(pos);
+<script>
+  const gridSize = 3;
+  const pieceSize = 100; // px
+  const gap = 5;
+  const board = document.getElementById('puzzle-board');
+  const container = document.getElementById('pieces-container');
+  const message = document.getElementById('message');
 
-          // Drop zone
-          const dropZone = document.createElement('div');
-          dropZone.classList.add('drop-zone');
-          dropZone.dataset.x = x;
-          dropZone.dataset.y = y;
-          dropZone.addEventListener('dragover', e => e.preventDefault());
-          dropZone.addEventListener('drop', handleDrop);
-          board.appendChild(dropZone);
-        }
+  let slots = {}; 
+  let pieces = [];
+  let draggedPiece = null;
+  let offsetX = 0;
+  let offsetY = 0;
+
+  // Initialize puzzle
+  function initPuzzle() {
+    message.style.display = 'none';
+    board.innerHTML = '';
+    container.innerHTML = '';
+    slots = {};
+    pieces = [];
+
+    // Create invisible drop zones (for snapping)
+    for(let y=0; y<gridSize; y++) {
+      for(let x=0; x<gridSize; x++) {
+        const dz = document.createElement('div');
+        dz.classList.add('drop-zone');
+        dz.style.left = (x * (pieceSize + gap)) + 'px';
+        dz.style.top = (y * (pieceSize + gap)) + 'px';
+        dz.style.width = pieceSize + 'px';
+        dz.style.height = pieceSize + 'px';
+        board.appendChild(dz);
+        slots[`${x},${y}`] = null;
       }
-
-      // Shuffle and create pieces
-      const shuffled = [...positions].sort(() => Math.random() - 0.5);
-      shuffled.forEach((pos, i) => {
-        const piece = document.createElement('div');
-        piece.classList.add('piece');
-        piece.setAttribute('draggable', 'true');
-        piece.dataset.x = pos.x;
-        piece.dataset.y = pos.y;
-        piece.style.backgroundPosition = `-${pos.x * 100}px -${pos.y * 100}px`;
-
-        piece.addEventListener('dragstart', (e) => {
-          e.dataTransfer.setData('text/plain', `${pos.x},${pos.y},${i}`);
-          e.dataTransfer.effectAllowed = 'move';
-          e.target.classList.add('dragging');
-        });
-
-        piece.addEventListener('dragend', (e) => {
-          e.target.classList.remove('dragging');
-        });
-
-        pieces.appendChild(piece);
-      });
     }
 
-    function handleDrop(e) {
-      const [pieceX, pieceY, pieceIndex] = e.dataTransfer.getData('text/plain').split(',').map(Number);
-      const dropX = +this.dataset.x;
-      const dropY = +this.dataset.y;
+    // Prepare all pieces positions
+    const positions = [];
+    for(let y=0; y<gridSize; y++) {
+      for(let x=0; x<gridSize; x++) {
+        positions.push({x,y});
+      }
+    }
 
-      const draggedPiece = document.querySelector(`.piece[data-x="${pieceX}"][data-y="${pieceY}"]`);
-      if (!draggedPiece) return;
+    // Shuffle positions to scatter pieces outside board
+    const shuffled = positions.slice().sort(() => Math.random() - 0.5);
 
-      if (pieceX === dropX && pieceY === dropY) {
-        this.appendChild(draggedPiece);
+    shuffled.forEach((pos, i) => {
+      const piece = document.createElement('div');
+      piece.classList.add('piece');
+      piece.id = 'piece-' + i;
+
+      // Show correct portion of image as background-position
+      piece.style.backgroundPosition = `-${pos.x * pieceSize}px -${pos.y * pieceSize}px`;
+      piece.style.backgroundSize = `${gridSize * pieceSize}px ${gridSize * pieceSize}px`;
+      
+      piece.dataset.correctX = pos.x;
+      piece.dataset.correctY = pos.y;
+      piece.dataset.slot = 'outside';
+
+      // Place scattered pieces in the container grid
+      piece.style.position = 'relative';
+      container.appendChild(piece);
+      pieces.push(piece);
+
+      // Drag handlers
+      piece.addEventListener('mousedown', startDrag);
+      piece.addEventListener('touchstart', startDrag, {passive:false});
+    });
+  }
+
+  // Dragging handlers
+
+  function startDrag(e) {
+    e.preventDefault();
+    draggedPiece = e.target;
+
+    draggedPiece.classList.add('dragging');
+    draggedPiece.style.zIndex = 1000;
+
+    const rect = draggedPiece.getBoundingClientRect();
+
+    if(e.type === 'touchstart') {
+      offsetX = e.touches[0].clientX - rect.left;
+      offsetY = e.touches[0].clientY - rect.top;
+      window.addEventListener('touchmove', dragMove, {passive:false});
+      window.addEventListener('touchend', endDrag);
+    } else {
+      offsetX = e.clientX - rect.left;
+      offsetY = e.clientY - rect.top;
+      window.addEventListener('mousemove', dragMove);
+      window.addEventListener('mouseup', endDrag);
+    }
+  }
+
+  function dragMove(e) {
+    e.preventDefault();
+
+    let clientX, clientY;
+    if(e.type === 'touchmove') {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+    }
+
+    draggedPiece.style.position = 'fixed';
+    draggedPiece.style.left = (clientX - offsetX) + 'px';
+    draggedPiece.style.top = (clientY - offsetY) + 'px';
+  }
+
+  function endDrag(e) {
+    e.preventDefault();
+    if(!draggedPiece) return;
+
+    let clientX, clientY;
+    if(e.type === 'touchend') {
+      clientX = e.changedTouches[0].clientX;
+      clientY = e.changedTouches[0].clientY;
+      window.removeEventListener('touchmove', dragMove);
+      window.removeEventListener('touchend', endDrag);
+    } else {
+      clientX = e.clientX;
+      clientY = e.clientY;
+      window.removeEventListener('mousemove', dragMove);
+      window.removeEventListener('mouseup', endDrag);
+    }
+
+    const boardRect = board.getBoundingClientRect();
+    const relX = clientX - boardRect.left;
+    const relY = clientY - boardRect.top;
+
+    let foundSlot = null;
+    for(let y=0; y<gridSize; y++) {
+      for(let x=0; x<gridSize; x++) {
+        const slotX = x * (pieceSize + gap);
+        const slotY = y * (pieceSize + gap);
+        if(relX > slotX && relX < slotX + pieceSize &&
+           relY > slotY && relY < slotY + pieceSize) {
+          foundSlot = {x, y};
+          break;
+        }
+      }
+      if(foundSlot) break;
+    }
+
+    if(foundSlot) {
+      const slotKey = `${foundSlot.x},${foundSlot.y}`;
+
+      if(slots[slotKey] && slots[slotKey] !== draggedPiece.id) {
+        // Slot occupied by another piece - snap back
+        resetPiecePosition(draggedPiece);
+      } else {
+        // Vacate old slot if any
+        if(draggedPiece.dataset.slot !== 'outside') {
+          slots[draggedPiece.dataset.slot] = null;
+        }
+        // Occupy new slot
+        slots[slotKey] = draggedPiece.id;
+        draggedPiece.dataset.slot = slotKey;
+
+        // Position piece on board
         draggedPiece.style.position = 'absolute';
-        draggedPiece.style.left = '0';
-        draggedPiece.style.top = '0';
-        draggedPiece.setAttribute('draggable', 'false');
-        draggedPiece.style.cursor = 'default';
+        draggedPiece.style.left = (boardRect.left + foundSlot.x * (pieceSize + gap)) + 'px';
+        draggedPiece.style.top = (boardRect.top + foundSlot.y * (pieceSize + gap)) + 'px';
+        draggedPiece.style.zIndex = 0;
 
-        correctCount++;
-        if (correctCount === gridSize * gridSize) {
-          document.getElementById('message').style.display = 'block';
-          // Optional: play sound or confetti here
-        }
+        document.body.appendChild(draggedPiece);
       }
+    } else {
+      // Not dropped on board, return piece to container grid
+      if(draggedPiece.dataset.slot !== 'outside') {
+        slots[draggedPiece.dataset.slot] = null;
+        draggedPiece.dataset.slot = 'outside';
+      }
+      container.appendChild(draggedPiece);
+      draggedPiece.style.position = 'relative';
+      draggedPiece.style.left = 'auto';
+      draggedPiece.style.top = 'auto';
+      draggedPiece.style.zIndex = 0;
     }
 
-    window.onload = initPuzzle;
-  </script>
+    draggedPiece.classList.remove('dragging');
+    draggedPiece = null;
+
+    checkCompletion();
+  }
+
+  // Reset piece to container layout position
+  function resetPiecePosition(piece) {
+    if(piece.dataset.slot === 'outside') {
+      piece.style.position = 'relative';
+      piece.style.left = 'auto';
+      piece.style.top = 'auto';
+      piece.style.zIndex = 0;
+    } else {
+      const [x, y] = piece.dataset.slot.split(',').map(Number);
+      const boardRect = board.getBoundingClientRect();
+      piece.style.position = 'absolute';
+      piece.style.left = (boardRect.left + x * (pieceSize + gap)) + 'px';
+      piece.style.top = (boardRect.top + y * (pieceSize + gap)) + 'px';
+      piece.style.zIndex = 0;
+      document.body.appendChild(piece);
+    }
+  }
+
+  // Check if all pieces are correctly placed
+  function checkCompletion() {
+    for(let y=0; y<gridSize; y++) {
+      for(let x=0; x<gridSize; x++) {
+        const slotKey = `${x},${y}`;
+        const pieceId = slots[slotKey];
+        if(!pieceId) return false;
+        const piece = document.getElementById(pieceId);
+        if(!piece) return false;
+        if(+piece.dataset.correctX !== x || +piece.dataset.correctY !== y) return false;
+      }
+    }
+    message.style.display = 'block';
+    return true;
+  }
+
+  window.onload = () => {
+    initPuzzle();
+  };
+
+  window.onresize = () => {
+    pieces.forEach(p => {
+      resetPiecePosition(p);
+    });
+  };
+</script>
+
 </body>
 </html>

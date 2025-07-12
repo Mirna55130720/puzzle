@@ -50,8 +50,14 @@
     position: absolute;
     width: 100px;
     height: 100px;
+    border-radius: 15px;
     left: 0;
     top: 0;
+    transition: box-shadow 0.3s ease, background-color 0.3s ease;
+  }
+  .drop-zone.highlight {
+    box-shadow: 0 0 15px 5px #ff80a1aa;
+    background-color: #ffe6f0cc;
   }
 
   #pieces-container {
@@ -84,12 +90,12 @@
     position: relative; /* default */
   }
   .piece.dragging {
-    opacity: 0.7;
+    opacity: 0.9;
     cursor: grabbing;
-    box-shadow: 0 20px 30px rgba(215,0,90,0.7);
-    transform: scale(1.05);
+    box-shadow: 0 25px 40px rgba(215,0,90,0.8);
+    transform: scale(1.1);
     transition: none;
-    position: fixed !important; /* so it moves with mouse */
+    position: fixed !important;
     z-index: 1000 !important;
   }
   .piece:hover:not(.dragging) {
@@ -271,6 +277,40 @@
     draggedPiece.style.position = 'fixed';
     draggedPiece.style.left = (clientX - offsetX) + 'px';
     draggedPiece.style.top = (clientY - offsetY) + 'px';
+
+    // Highlight closest slot
+    highlightClosestSlot(clientX, clientY);
+  }
+
+  function highlightClosestSlot(clientX, clientY) {
+    const boardRect = board.getBoundingClientRect();
+
+    let closestSlot = null;
+    let minDist = Infinity;
+
+    for(let y=0; y<gridSize; y++) {
+      for(let x=0; x<gridSize; x++) {
+        const slotX = boardRect.left + x * (pieceSize + gap) + pieceSize / 2;
+        const slotY = boardRect.top + y * (pieceSize + gap) + pieceSize / 2;
+
+        const dist = Math.hypot(clientX - slotX, clientY - slotY);
+
+        if(dist < minDist) {
+          minDist = dist;
+          closestSlot = {x, y, dist};
+        }
+      }
+    }
+
+    // Remove all highlights
+    document.querySelectorAll('.drop-zone').forEach(dz => dz.classList.remove('highlight'));
+
+    // If close enough (e.g. 80 px), highlight the closest slot
+    if(minDist < 80 && closestSlot) {
+      const index = closestSlot.y * gridSize + closestSlot.x;
+      const dz = board.children[index]; // drop-zones are first children
+      dz.classList.add('highlight');
+    }
   }
 
   function endDrag(e) {
@@ -291,48 +331,50 @@
     }
 
     const boardRect = board.getBoundingClientRect();
-    const relX = clientX - boardRect.left;
-    const relY = clientY - boardRect.top;
 
-    let foundSlot = null;
+    // Find closest slot for snapping (within bigger radius)
+    let closestSlot = null;
+    let minDist = Infinity;
+
     for(let y=0; y<gridSize; y++) {
       for(let x=0; x<gridSize; x++) {
-        const slotX = x * (pieceSize + gap);
-        const slotY = y * (pieceSize + gap);
-        if(relX > slotX && relX < slotX + pieceSize &&
-           relY > slotY && relY < slotY + pieceSize) {
-          foundSlot = {x, y};
-          break;
+        const slotX = boardRect.left + x * (pieceSize + gap) + pieceSize / 2;
+        const slotY = boardRect.top + y * (pieceSize + gap) + pieceSize / 2;
+
+        const dist = Math.hypot(clientX - slotX, clientY - slotY);
+
+        if(dist < minDist) {
+          minDist = dist;
+          closestSlot = {x, y, dist};
         }
       }
-      if(foundSlot) break;
     }
 
-    if(foundSlot) {
-      const slotKey = `${foundSlot.x},${foundSlot.y}`;
+    // Remove all highlights
+    document.querySelectorAll('.drop-zone').forEach(dz => dz.classList.remove('highlight'));
+
+    if(closestSlot && minDist < 100) { // bigger radius (100px)
+      const slotKey = `${closestSlot.x},${closestSlot.y}`;
 
       if(slots[slotKey] && slots[slotKey] !== draggedPiece.id) {
-        // Slot occupied by another piece - snap back
+        // Occupied
         resetPiecePosition(draggedPiece);
       } else {
-        // Vacate old slot if any
         if(draggedPiece.dataset.slot !== 'outside') {
           slots[draggedPiece.dataset.slot] = null;
         }
-        // Occupy new slot
         slots[slotKey] = draggedPiece.id;
         draggedPiece.dataset.slot = slotKey;
 
-        // Position piece on board
         draggedPiece.style.position = 'absolute';
-        draggedPiece.style.left = (boardRect.left + foundSlot.x * (pieceSize + gap)) + 'px';
-        draggedPiece.style.top = (boardRect.top + foundSlot.y * (pieceSize + gap)) + 'px';
+        draggedPiece.style.left = (boardRect.left + closestSlot.x * (pieceSize + gap)) + 'px';
+        draggedPiece.style.top = (boardRect.top + closestSlot.y * (pieceSize + gap)) + 'px';
         draggedPiece.style.zIndex = 0;
 
         document.body.appendChild(draggedPiece);
       }
     } else {
-      // Not dropped on board, return piece to container grid
+      // Return outside container
       if(draggedPiece.dataset.slot !== 'outside') {
         slots[draggedPiece.dataset.slot] = null;
         draggedPiece.dataset.slot = 'outside';

@@ -45,7 +45,7 @@
     margin-bottom: 35px;
   }
 
-  /* Drop zones: invisible but help snapping */
+  /* Drop zones for snapping highlight */
   .drop-zone {
     position: absolute;
     width: 100px;
@@ -79,6 +79,7 @@
   .piece {
     width: 100px;
     height: 100px;
+    /* REPLACE the URL below with 'us_puzzle.jpeg' for your local image */
     background-image: url('us_puzzle.jpeg');
     background-size: 300px 300px;
     border-radius: 10px;
@@ -87,7 +88,7 @@
     user-select: none;
     border: 3px solid #ffaccb;
     transition: box-shadow 0.2s ease;
-    position: relative; /* default */
+    position: relative;
   }
   .piece.dragging {
     opacity: 0.9;
@@ -330,9 +331,12 @@
       window.removeEventListener('mouseup', endDrag);
     }
 
+    // Remove all highlights
+    document.querySelectorAll('.drop-zone').forEach(dz => dz.classList.remove('highlight'));
+
+    // Calculate snapping relative to puzzle board container!
     const boardRect = board.getBoundingClientRect();
 
-    // Find closest slot for snapping (within bigger radius)
     let closestSlot = null;
     let minDist = Infinity;
 
@@ -350,14 +354,10 @@
       }
     }
 
-    // Remove all highlights
-    document.querySelectorAll('.drop-zone').forEach(dz => dz.classList.remove('highlight'));
-
-    if(closestSlot && minDist < 100) { // bigger radius (100px)
+    if(closestSlot && minDist < 100) { // snap radius
       const slotKey = `${closestSlot.x},${closestSlot.y}`;
 
       if(slots[slotKey] && slots[slotKey] !== draggedPiece.id) {
-        // Occupied
         resetPiecePosition(draggedPiece);
       } else {
         if(draggedPiece.dataset.slot !== 'outside') {
@@ -367,11 +367,11 @@
         draggedPiece.dataset.slot = slotKey;
 
         draggedPiece.style.position = 'absolute';
-        draggedPiece.style.left = (boardRect.left + closestSlot.x * (pieceSize + gap)) + 'px';
-        draggedPiece.style.top = (boardRect.top + closestSlot.y * (pieceSize + gap)) + 'px';
+        draggedPiece.style.left = (closestSlot.x * (pieceSize + gap)) + 'px';
+        draggedPiece.style.top = (closestSlot.y * (pieceSize + gap)) + 'px';
         draggedPiece.style.zIndex = 0;
 
-        document.body.appendChild(draggedPiece);
+        board.appendChild(draggedPiece);
       }
     } else {
       // Return outside container
@@ -392,25 +392,23 @@
     checkCompletion();
   }
 
-  // Reset piece to container layout position
   function resetPiecePosition(piece) {
     if(piece.dataset.slot === 'outside') {
       piece.style.position = 'relative';
       piece.style.left = 'auto';
       piece.style.top = 'auto';
       piece.style.zIndex = 0;
+      container.appendChild(piece);
     } else {
       const [x, y] = piece.dataset.slot.split(',').map(Number);
-      const boardRect = board.getBoundingClientRect();
       piece.style.position = 'absolute';
-      piece.style.left = (boardRect.left + x * (pieceSize + gap)) + 'px';
-      piece.style.top = (boardRect.top + y * (pieceSize + gap)) + 'px';
+      piece.style.left = (x * (pieceSize + gap)) + 'px';
+      piece.style.top = (y * (pieceSize + gap)) + 'px';
       piece.style.zIndex = 0;
-      document.body.appendChild(piece);
+      board.appendChild(piece);
     }
   }
 
-  // Check if all pieces are correctly placed
   function checkCompletion() {
     for(let y=0; y<gridSize; y++) {
       for(let x=0; x<gridSize; x++) {
